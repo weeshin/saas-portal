@@ -8,7 +8,7 @@
     "build": "npm run build -w @saas-portal/api && npm run build -w @saas-portal/web",
     "test": "npm run test -w @saas-portal/api && npm run test -w @saas-portal/web",
     "lint": "npm run lint -w @saas-portal/api && npm run lint -w @saas-portal/web",
-    "infra:up": "docker compose up -d mysql redis",
+    "infra:up": "docker compose up -d postgres redis",
     "infra:down": "docker compose down",
     "db:migrate": "npm run migration:run -w @saas-portal/api"
   },

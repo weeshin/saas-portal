@@ -15,7 +15,7 @@ The portal must treat cloud vendors as replaceable infrastructure implementation
 | State management | Pinia |
 | Routing | Vue Router |
 | Backend API and workers | NestJS, TypeScript |
-| Database | MySQL 8 |
+| Database | PostgreSQL 17 |
 | ORM and migrations | TypeORM |
 | API style | REST/JSON with OpenAPI documentation |
 | Background jobs | Redis-backed queue (BullMQ) |
@@ -158,7 +158,7 @@ Starting a trial shall enqueue a `PROVISION_TENANT` job and return immediately. 
 
 1. Resolve a deployment profile from product, region, size, database type, and release channel.
 2. Allocate compute.
-3. Create the MySQL database and credentials.
+3. Create the PostgreSQL database and credentials.
 4. Create required storage.
 5. Deploy the selected application Docker image.
 6. Configure encrypted environment variables and secrets.
@@ -224,7 +224,7 @@ The registry shall be the authoritative mapping between control-plane entities a
 
 ### 6.9 Backups
 
-- The system shall create scheduled automatic logical MySQL backups to object storage.
+- The system shall create scheduled automatic logical PostgreSQL backups to object storage.
 - Backup metadata shall include tenant, environment, type, status, application version, database schema version, storage provider/key, size, checksum, timestamps, and expiry.
 - Backup types shall include `AUTOMATIC`, `MANUAL`, and `PRE_UPGRADE`.
 - Backups shall be encrypted in transit and at rest.
@@ -267,7 +267,7 @@ Operations shall additionally record their type, status, progress/step, start/co
 
 ## 7. Data Requirements
 
-The initial MySQL schema shall include at least:
+The initial PostgreSQL schema shall include at least:
 
 - `users`
 - `user_sessions`
@@ -323,7 +323,7 @@ Example provisioning request:
   "product": "inventory",
   "region": "singapore",
   "size": "starter",
-  "database": "mysql",
+  "database": "postgresql",
   "release": "stable"
 }
 ```
@@ -331,7 +331,7 @@ Example provisioning request:
 ## 9. Security and Privacy Requirements
 
 - Enforce TLS for all production traffic.
-- Encrypt cloud credentials and application secrets with a master key stored separately from MySQL.
+- Encrypt cloud credentials and application secrets with a master key stored separately from PostgreSQL.
 - Access secrets by opaque reference wherever possible.
 - Apply least-privilege credentials per provider capability and environment.
 - Protect browser sessions against CSRF, XSS, fixation, and token theft.
@@ -387,7 +387,7 @@ Example provisioning request:
 - Configurable free trial.
 - Asynchronous, idempotent tenant provisioning.
 - DigitalOcean provider adapter.
-- Isolated application, MySQL database, DNS/TLS, and health check.
+- Isolated application, PostgreSQL database, DNS/TLS, and health check.
 - Docker-based releases and platform-controlled migrations.
 - Automatic logical backups.
 - Environment dashboard and Open Application action.
@@ -412,7 +412,7 @@ The MVP is accepted when all of the following are demonstrated in a staging envi
 
 1. A new user can register, verify email, create an organization, accept terms, select an available subdomain and region, and start a trial.
 2. Starting a trial returns promptly with an operation ID and creates exactly one asynchronous provisioning workflow.
-3. The workflow creates an isolated application and MySQL database, configures DNS/TLS, runs migrations, creates the initial tenant admin, passes health checks, and marks the environment `ACTIVE`.
+3. The workflow creates an isolated application and PostgreSQL database, configures DNS/TLS, runs migrations, creates the initial tenant admin, passes health checks, and marks the environment `ACTIVE`.
 4. Retrying a workflow after an injected late-stage failure does not duplicate already-created infrastructure.
 5. The customer can view status, health, URL, version, trial expiry, and last backup, then open the application.
 6. An automatic encrypted logical backup is created, verified, registered, and shown in the portal.

@@ -1,18 +1,17 @@
 services:
-  mysql:
-    image: mysql:8.4
+  postgres:
+    image: postgres:17-alpine
     restart: unless-stopped
     environment:
-      MYSQL_DATABASE: ${DATABASE_NAME:-saas_portal}
-      MYSQL_USER: ${DATABASE_USER:-saas_portal}
-      MYSQL_PASSWORD: ${DATABASE_PASSWORD:-saas_portal_dev}
-      MYSQL_ROOT_PASSWORD: ${DATABASE_ROOT_PASSWORD:-root_dev_only}
+      POSTGRES_DB: ${DATABASE_NAME:-saas_portal}
+      POSTGRES_USER: ${DATABASE_USER:-saas_portal}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD:-saas_portal_dev}
     ports:
-      - "${DATABASE_PORT:-3307}:3306"
+      - "${DATABASE_PORT:-5433}:5432"
     volumes:
-      - mysql-data:/var/lib/mysql
+      - postgres-data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-uroot", "-p${DATABASE_ROOT_PASSWORD:-root_dev_only}"]
+      test: ["CMD-SHELL", "pg_isready -U ${DATABASE_USER:-saas_portal} -d ${DATABASE_NAME:-saas_portal}"]
       interval: 5s
       timeout: 5s
       retries: 20
@@ -31,5 +30,5 @@ services:
       retries: 20
 
 volumes:
-  mysql-data:
+  postgres-data:
   redis-data:
