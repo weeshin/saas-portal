@@ -16,7 +16,7 @@ async function logout(): Promise<void> { auth.logout(); await router.push('/logi
     <header class="sticky top-0 z-20 border-b border-ink/10 bg-white/90 backdrop-blur-xl">
       <div class="mx-auto flex h-18 max-w-[1500px] items-center justify-between px-5 sm:px-8">
         <div class="flex items-center gap-10">
-          <RouterLink to="/control" class="text-lg font-black tracking-tight">PORTAL<span class="text-leaf">/</span></RouterLink>
+          <RouterLink to="/control" class="text-lg font-black tracking-tight">AnnoVis<span class="text-leaf">/</span></RouterLink>
           <nav class="hidden items-center gap-1 text-sm font-semibold md:flex">
             <a href="#overview" class="rounded-full bg-ink px-4 py-2 text-white">Overview</a>
             <a href="#environment" class="rounded-full px-4 py-2 text-ink/55 hover:bg-ink/5 hover:text-ink">Environment</a>

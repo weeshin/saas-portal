@@ -27,13 +27,13 @@ async function submit(): Promise<void> {
 <template>
   <main class="grid min-h-screen bg-cream lg:grid-cols-2">
     <section class="hidden bg-ink p-14 text-white lg:flex lg:flex-col lg:justify-between">
-      <RouterLink to="/" class="text-lg font-black">PORTAL<span class="text-emerald-300">/</span></RouterLink>
+      <RouterLink to="/" class="text-lg font-black">AnnoVis<span class="text-emerald-300">/</span></RouterLink>
       <div><p class="text-sm font-bold uppercase tracking-[.2em] text-emerald-300">Your own secure workspace</p><h1 class="mt-5 text-6xl font-black leading-[.95] tracking-[-.05em]">From signup to running—without the infrastructure headache.</h1></div>
       <p class="text-sm text-white/45">Secure hosting · Automatic backups · Managed operations</p>
     </section>
     <section class="flex items-center justify-center px-6 py-16">
       <form class="w-full max-w-md" @submit.prevent="submit">
-        <RouterLink to="/" class="mb-12 block text-lg font-black lg:hidden">PORTAL/</RouterLink>
+        <RouterLink to="/" class="mb-12 block text-lg font-black lg:hidden">AnnoVis/</RouterLink>
         <p class="text-xs font-black uppercase tracking-[.2em] text-leaf">Start your 30-day trial</p>
         <h2 class="mt-3 text-4xl font-black tracking-tight">Create your account</h2>
         <p class="mt-3 text-ink/55">No credit card required.</p>

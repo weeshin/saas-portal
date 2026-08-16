@@ -13,7 +13,7 @@ async function bootstrap(): Promise<void> {
 
   const document = SwaggerModule.createDocument(
     app,
-    new DocumentBuilder().setTitle('SaaS Portal API').setVersion('1.0').addBearerAuth().build(),
+    new DocumentBuilder().setTitle('AnnoVis API').setVersion('1.0').addBearerAuth().build(),
   );
   SwaggerModule.setup('api/docs', app, document);
   await app.listen(config.get<number>('API_PORT', 3100));

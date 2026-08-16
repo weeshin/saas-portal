@@ -21,7 +21,7 @@ async function submit(): Promise<void> {
   <main class="grid min-h-screen bg-cream lg:grid-cols-[.85fr_1.15fr]">
     <section class="flex items-center justify-center px-6 py-16">
       <form class="w-full max-w-md" @submit.prevent="submit">
-        <RouterLink to="/" class="mb-14 block text-lg font-black tracking-tight">PORTAL<span class="text-leaf">/</span></RouterLink>
+        <RouterLink to="/" class="mb-14 block text-lg font-black tracking-tight">AnnoVis<span class="text-leaf">/</span></RouterLink>
         <p class="text-xs font-black uppercase tracking-[.2em] text-leaf">Customer control plane</p>
         <h1 class="mt-3 text-4xl font-black tracking-[-.035em]">Welcome back</h1>
         <p class="mt-3 text-ink/55">Sign in to manage your environment.</p>

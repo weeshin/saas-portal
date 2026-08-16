@@ -1,7 +1,7 @@
 <template>
   <main class="min-h-screen overflow-hidden bg-cream">
     <nav class="mx-auto flex max-w-6xl items-center justify-between px-6 py-7">
-      <RouterLink to="/" class="text-lg font-black tracking-tight">PORTAL<span class="text-leaf">/</span></RouterLink>
+      <RouterLink to="/" class="text-lg font-black tracking-tight">AnnoVis<span class="text-leaf">/</span></RouterLink>
       <div class="flex items-center gap-3"><RouterLink to="/login" class="px-3 py-2 text-sm font-bold text-ink/60">Sign in</RouterLink><RouterLink to="/register" class="rounded-full border border-ink/15 bg-white px-5 py-2.5 text-sm font-bold shadow-sm transition hover:-translate-y-0.5">Start free trial</RouterLink></div>
     </nav>
     <section class="relative mx-auto grid max-w-6xl gap-16 px-6 pb-24 pt-20 lg:grid-cols-[1.1fr_.9fr] lg:items-center">
