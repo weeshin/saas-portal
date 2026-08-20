@@ -10,7 +10,9 @@
     "test": "jest --runInBand --passWithNoTests",
     "migration:run": "typeorm-ts-node-commonjs -d src/database/data-source.ts migration:run",
     "migration:run:prod": "typeorm -d dist/database/data-source.js migration:run",
-    "migration:revert": "typeorm-ts-node-commonjs -d src/database/data-source.ts migration:revert"
+    "migration:revert": "typeorm-ts-node-commonjs -d src/database/data-source.ts migration:revert",
+    "admin:create": "ts-node src/scripts/create-admin.ts",
+    "admin:create:prod": "node dist/scripts/create-admin.js"
   },
   "dependencies": {
     "@nestjs/common": "^11.1.6",

@@ -2,7 +2,7 @@
   <main class="min-h-screen overflow-hidden bg-cream">
     <nav class="mx-auto flex max-w-6xl items-center justify-between px-6 py-7">
       <RouterLink to="/" class="text-lg font-black tracking-tight">AnnoVis<span class="text-leaf">/</span></RouterLink>
-      <div class="flex items-center gap-3"><RouterLink to="/login" class="px-3 py-2 text-sm font-bold text-ink/60">Sign in</RouterLink><RouterLink to="/register" class="rounded-full border border-ink/15 bg-white px-5 py-2.5 text-sm font-bold shadow-sm transition hover:-translate-y-0.5">Start free trial</RouterLink></div>
+      <div class="flex items-center gap-3"><RouterLink to="/login" class="rounded-full border border-ink/15 bg-white px-5 py-2.5 text-sm font-bold shadow-sm transition hover:-translate-y-0.5">Staff sign in</RouterLink></div>
     </nav>
     <section class="relative mx-auto grid max-w-6xl gap-16 px-6 pb-24 pt-20 lg:grid-cols-[1.1fr_.9fr] lg:items-center">
       <div>
@@ -10,7 +10,7 @@
         <h1 class="max-w-3xl text-5xl font-black leading-[.95] tracking-[-.055em] sm:text-7xl">A simpler way to run your business software.</h1>
         <p class="mt-7 max-w-xl text-lg leading-8 text-ink/65">Choose your region, claim your workspace, and let us handle deployment, security, backups, and operations.</p>
         <div class="mt-9 flex flex-wrap items-center gap-4">
-          <RouterLink to="/register" class="rounded-full bg-ink px-7 py-4 text-sm font-bold text-white shadow-xl shadow-ink/15 transition hover:-translate-y-1">Create your workspace →</RouterLink>
+          <RouterLink to="/login" class="rounded-full bg-ink px-7 py-4 text-sm font-bold text-white shadow-xl shadow-ink/15 transition hover:-translate-y-1">Open backoffice →</RouterLink>
           <span class="text-sm font-semibold text-ink/50">30-day free trial · No card required</span>
         </div>
       </div>

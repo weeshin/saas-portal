@@ -22,7 +22,7 @@ async function submit(): Promise<void> {
     <section class="flex items-center justify-center px-6 py-16">
       <form class="w-full max-w-md" @submit.prevent="submit">
         <RouterLink to="/" class="mb-14 block text-lg font-black tracking-tight">AnnoVis<span class="text-leaf">/</span></RouterLink>
-        <p class="text-xs font-black uppercase tracking-[.2em] text-leaf">Customer control plane</p>
+        <p class="text-xs font-black uppercase tracking-[.2em] text-leaf">Operations backoffice</p>
         <h1 class="mt-3 text-4xl font-black tracking-[-.035em]">Welcome back</h1>
         <p class="mt-3 text-ink/55">Sign in to manage your environment.</p>
         <div class="mt-9 space-y-5">
@@ -31,7 +31,7 @@ async function submit(): Promise<void> {
         </div>
         <button :disabled="loading" class="mt-8 w-full rounded-full bg-ink px-6 py-4 font-bold text-white transition hover:-translate-y-0.5 disabled:opacity-50">{{ loading ? 'Signing in…' : 'Sign in →' }}</button>
         <p v-if="error" role="alert" class="mt-5 rounded-xl bg-red-50 p-3 text-sm text-red-700">{{ error }}</p>
-        <p class="mt-8 text-center text-sm text-ink/55">New here? <RouterLink to="/register" class="font-bold text-leaf">Start a free trial</RouterLink></p>
+        <p class="mt-8 text-center text-sm text-ink/55">Access is managed by your AnnoVis administrator.</p>
       </form>
     </section>
     <section class="relative hidden overflow-hidden bg-ink p-14 text-white lg:flex lg:flex-col lg:justify-between">

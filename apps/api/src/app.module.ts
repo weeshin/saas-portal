@@ -7,6 +7,11 @@ import { OrganizationsModule } from './organizations/organizations.module';
 import { User } from './users/user.entity';
 import { Organization } from './organizations/organization.entity';
 import { OrganizationUser } from './organizations/organization-user.entity';
+import { BackofficeModule } from './backoffice/backoffice.module';
+import { Customer } from './backoffice/customer.entity';
+import { ManagedApplication } from './backoffice/application.entity';
+import { ApplicationRelease } from './backoffice/release.entity';
+import { ManagedEnvironment } from './backoffice/environment.entity';
 
 @Module({
   imports: [
@@ -23,13 +28,14 @@ import { OrganizationUser } from './organizations/organization-user.entity';
         ssl: config.get('DATABASE_SSL', 'false') === 'true'
           ? { rejectUnauthorized: false }
           : false,
-        entities: [User, Organization, OrganizationUser],
+        entities: [User, Organization, OrganizationUser, Customer, ManagedApplication, ApplicationRelease, ManagedEnvironment],
         synchronize: false,
       }),
     }),
     HealthModule,
     AuthModule,
     OrganizationsModule,
+    BackofficeModule,
   ],
 })
 export class AppModule {}

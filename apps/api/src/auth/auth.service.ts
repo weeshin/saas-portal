@@ -10,7 +10,7 @@ import { ChangePasswordDto } from './dto/change-password.dto';
 
 export interface AuthResult {
   accessToken: string;
-  user: { id: string; name: string; email: string };
+  user: { id: string; name: string; email: string; role: User['role'] };
 }
 
 export type PublicUser = AuthResult['user'];
@@ -34,7 +34,7 @@ export class AuthService {
   async login(input: LoginDto): Promise<AuthResult> {
     const email = input.email.trim().toLowerCase();
     const user = await this.users.createQueryBuilder('user').addSelect('user.passwordHash').where({ email }).getOne();
-    if (!user || !(await argon2.verify(user.passwordHash, input.password))) {
+    if (!user || !user.active || !(await argon2.verify(user.passwordHash, input.password))) {
       throw new UnauthorizedException('Invalid email or password');
     }
     return this.issueToken(user);
@@ -43,7 +43,7 @@ export class AuthService {
   async findPublicUser(id: string): Promise<PublicUser> {
     const user = await this.users.findOneBy({ id });
     if (!user) throw new UnauthorizedException('User no longer exists');
-    return { id: user.id, name: user.name, email: user.email };
+    return { id: user.id, name: user.name, email: user.email, role: user.role };
   }
 
   async changePassword(userId: string, input: ChangePasswordDto): Promise<void> {
@@ -64,8 +64,8 @@ export class AuthService {
 
   private async issueToken(user: User): Promise<AuthResult> {
     return {
-      accessToken: await this.jwt.signAsync({ sub: user.id, email: user.email }),
-      user: { id: user.id, name: user.name, email: user.email },
+      accessToken: await this.jwt.signAsync({ sub: user.id, email: user.email, role: user.role }),
+      user: { id: user.id, name: user.name, email: user.email, role: user.role },
     };
   }
 }

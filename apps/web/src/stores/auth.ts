@@ -2,7 +2,7 @@ import { computed, ref } from 'vue';
 import { defineStore } from 'pinia';
 import { apiRequest } from '../lib/api';
 
-export interface PortalUser { id: string; name: string; email: string }
+export interface PortalUser { id: string; name: string; email: string; role: string }
 interface AuthResponse { accessToken: string; user: PortalUser }
 
 export const useAuthStore = defineStore('auth', () => {

@@ -1,41 +1,62 @@
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
+import { apiRequest } from '../lib/api';
 import { useAuthStore } from '../stores/auth';
+
+interface Summary { customers: number; applications: number; releases: number; environments: number; activeEnvironments: number; failedEnvironments: number }
+interface Customer { id: string; code: string; name: string; contactEmail: string | null; status: string }
+interface Application { id: string; code: string; name: string; ghcrOwner: string; apiPackage: string | null; webPackage: string | null; status: string }
+interface Environment { id: string; name: string; hostname: string; deploymentMode: string; status: string }
 
 const auth = useAuthStore();
 const router = useRouter();
-const mobileNavOpen = ref(false);
-const currentPassword = ref('');
-const newPassword = ref('');
-const confirmPassword = ref('');
-const passwordError = ref('');
-const passwordSuccess = ref('');
-const changingPassword = ref(false);
+const loading = ref(true);
+const error = ref('');
+const summary = ref<Summary>({ customers: 0, applications: 0, releases: 0, environments: 0, activeEnvironments: 0, failedEnvironments: 0 });
+const customers = ref<Customer[]>([]);
+const applications = ref<Application[]>([]);
+const environments = ref<Environment[]>([]);
+const showCustomerForm = ref(false);
+const savingCustomer = ref(false);
+const customerForm = ref({ code: '', name: '', contactName: '', contactEmail: '', notes: '' });
 const initials = computed(() => auth.user?.name.split(/\s+/).map(part => part[0]).join('').slice(0, 2).toUpperCase() ?? 'U');
+const canOperate = computed(() => ['SUPER_ADMIN', 'OPERATIONS'].includes(auth.user?.role ?? ''));
 
-async function logout(): Promise<void> { auth.logout(); await router.push('/login'); }
-
-async function submitPasswordChange(): Promise<void> {
-  passwordError.value = '';
-  passwordSuccess.value = '';
-  if (newPassword.value !== confirmPassword.value) {
-    passwordError.value = 'New passwords do not match.';
-    return;
-  }
-  changingPassword.value = true;
+async function loadDashboard(): Promise<void> {
+  loading.value = true;
+  error.value = '';
   try {
-    await auth.changePassword(currentPassword.value, newPassword.value);
-    currentPassword.value = '';
-    newPassword.value = '';
-    confirmPassword.value = '';
-    passwordSuccess.value = 'Your password has been changed.';
-  } catch (error) {
-    passwordError.value = error instanceof Error ? error.message : 'Unable to change password.';
+    [summary.value, customers.value, applications.value, environments.value] = await Promise.all([
+      apiRequest<Summary>('/backoffice/summary'),
+      apiRequest<Customer[]>('/backoffice/customers'),
+      apiRequest<Application[]>('/backoffice/applications'),
+      apiRequest<Environment[]>('/backoffice/environments'),
+    ]);
+  } catch (caught) {
+    error.value = caught instanceof Error ? caught.message : 'Unable to load the backoffice.';
   } finally {
-    changingPassword.value = false;
+    loading.value = false;
   }
 }
+
+async function createCustomer(): Promise<void> {
+  savingCustomer.value = true;
+  error.value = '';
+  try {
+    await apiRequest<Customer>('/backoffice/customers', { method: 'POST', body: JSON.stringify(customerForm.value) });
+    customerForm.value = { code: '', name: '', contactName: '', contactEmail: '', notes: '' };
+    showCustomerForm.value = false;
+    await loadDashboard();
+  } catch (caught) {
+    error.value = caught instanceof Error ? caught.message : 'Unable to create customer.';
+  } finally {
+    savingCustomer.value = false;
+  }
+}
+
+async function logout(): Promise<void> { auth.logout(); await router.push('/login'); }
+onMounted(loadDashboard);
 </script>
 
 <template>
@@ -45,90 +66,50 @@ async function submitPasswordChange(): Promise<void> {
         <div class="flex items-center gap-10">
           <RouterLink to="/control" class="text-lg font-black tracking-tight">AnnoVis<span class="text-leaf">/</span></RouterLink>
           <nav class="hidden items-center gap-1 text-sm font-semibold md:flex">
-            <a href="#overview" class="rounded-full bg-ink px-4 py-2 text-white">Overview</a>
-            <a href="#environment" class="rounded-full px-4 py-2 text-ink/55 hover:bg-ink/5 hover:text-ink">Environment</a>
-            <a href="#backups" class="rounded-full px-4 py-2 text-ink/55 hover:bg-ink/5 hover:text-ink">Backups</a>
-            <a href="#operations" class="rounded-full px-4 py-2 text-ink/55 hover:bg-ink/5 hover:text-ink">Operations</a>
+            <a href="#overview" class="rounded-full bg-ink px-4 py-2 text-white">Dashboard</a>
+            <a href="#customers" class="rounded-full px-4 py-2 text-ink/55 hover:bg-ink/5">Customers</a>
+            <a href="#applications" class="rounded-full px-4 py-2 text-ink/55 hover:bg-ink/5">Applications</a>
+            <a href="#environments" class="rounded-full px-4 py-2 text-ink/55 hover:bg-ink/5">Environments</a>
           </nav>
         </div>
         <div class="flex items-center gap-3">
-          <div class="hidden text-right sm:block"><div class="text-sm font-bold">{{ auth.user?.name }}</div><div class="text-xs text-ink/45">{{ auth.user?.email }}</div></div>
-          <button class="grid h-10 w-10 place-items-center rounded-full bg-mint text-xs font-black text-leaf" :aria-expanded="mobileNavOpen" @click="mobileNavOpen = !mobileNavOpen">{{ initials }}</button>
-          <button class="hidden rounded-full border border-ink/10 px-4 py-2 text-xs font-bold sm:block" @click="logout">Sign out</button>
+          <div class="hidden text-right sm:block"><div class="text-sm font-bold">{{ auth.user?.name }}</div><div class="text-xs text-ink/45">{{ auth.user?.role?.replace('_', ' ') }}</div></div>
+          <span class="grid h-10 w-10 place-items-center rounded-full bg-mint text-xs font-black text-leaf">{{ initials }}</span>
+          <button class="rounded-full border border-ink/10 px-4 py-2 text-xs font-bold" @click="logout">Sign out</button>
         </div>
       </div>
     </header>
 
     <main class="mx-auto max-w-[1500px] px-5 py-9 sm:px-8 sm:py-12">
       <section id="overview" class="flex flex-col justify-between gap-6 lg:flex-row lg:items-end">
-        <div><p class="text-xs font-black uppercase tracking-[.2em] text-leaf">Customer control plane</p><h1 class="mt-3 text-4xl font-black tracking-[-.045em] sm:text-5xl">Good day, {{ auth.user?.name.split(' ')[0] }}.</h1><p class="mt-3 text-ink/55">Here is the current state of your SaaS environment.</p></div>
-        <div class="flex items-center gap-3 rounded-2xl border border-amber-300/60 bg-amber-50 px-4 py-3 text-sm"><span class="h-2.5 w-2.5 rounded-full bg-amber-500"></span><div><span class="font-bold">Setup required</span><span class="ml-2 text-ink/50">No organization or environment yet</span></div></div>
+        <div><p class="text-xs font-black uppercase tracking-[.2em] text-leaf">Operations backoffice</p><h1 class="mt-3 text-4xl font-black tracking-[-.045em] sm:text-5xl">Platform overview</h1><p class="mt-3 text-ink/55">Manage customers, releases, infrastructure, domains, and deployments.</p></div>
+        <button class="rounded-full border border-ink/10 bg-white px-5 py-3 text-sm font-bold" :disabled="loading" @click="loadDashboard">{{ loading ? 'Refreshing…' : 'Refresh data' }}</button>
       </section>
 
-      <section class="mt-9 grid gap-5 xl:grid-cols-[1.35fr_.65fr]">
-        <article id="environment" class="overflow-hidden rounded-[1.7rem] bg-ink text-white shadow-xl shadow-ink/8">
-          <div class="flex flex-col justify-between gap-8 p-7 sm:flex-row sm:p-9">
-            <div><div class="flex items-center gap-3"><span class="rounded-full bg-white/8 px-3 py-1 text-xs font-bold text-white/60">PRODUCTION</span><span class="text-xs font-bold text-amber-300">● Not configured</span></div><h2 class="mt-8 text-3xl font-black tracking-tight">Your application environment</h2><p class="mt-2 max-w-xl text-sm leading-6 text-white/50">Complete organization setup to choose a subdomain and region, accept terms, and start your 30-day trial.</p></div>
-            <button disabled class="self-start rounded-full bg-white/10 px-5 py-3 text-sm font-bold text-white/40">Open application ↗</button>
-          </div>
-          <div class="grid border-t border-white/10 sm:grid-cols-2 lg:grid-cols-4">
-            <div class="border-white/10 p-6 sm:border-r"><p class="text-xs uppercase tracking-widest text-white/35">URL</p><p class="mt-2 font-bold text-white/65">Not assigned</p></div>
-            <div class="border-white/10 p-6 lg:border-r"><p class="text-xs uppercase tracking-widest text-white/35">Version</p><p class="mt-2 font-bold text-white/65">—</p></div>
-            <div class="border-white/10 p-6 sm:border-r"><p class="text-xs uppercase tracking-widest text-white/35">Region</p><p class="mt-2 font-bold text-white/65">Not selected</p></div>
-            <div class="p-6"><p class="text-xs uppercase tracking-widest text-white/35">Health</p><p class="mt-2 font-bold text-white/65">UNKNOWN</p></div>
-          </div>
-        </article>
+      <p v-if="error" role="alert" class="mt-6 rounded-2xl border border-red-200 bg-red-50 px-5 py-4 text-sm font-semibold text-red-700">{{ error }}</p>
 
-        <article class="rounded-[1.7rem] border border-ink/8 bg-white p-7 shadow-sm sm:p-8">
-          <div class="flex items-center justify-between"><div><p class="text-xs font-black uppercase tracking-[.16em] text-leaf">Onboarding</p><h2 class="mt-2 text-2xl font-black">Create your workspace</h2></div><span class="grid h-12 w-12 place-items-center rounded-2xl bg-mint font-black text-leaf">0%</span></div>
-          <ol class="mt-7 space-y-4 text-sm">
-            <li class="flex gap-3"><span class="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-leaf text-xs font-black text-white">✓</span><div><p class="font-bold">Account created</p><p class="mt-0.5 text-ink/45">Your secure portal access is ready.</p></div></li>
-            <li class="flex gap-3"><span class="grid h-6 w-6 shrink-0 place-items-center rounded-full border-2 border-ink/15 text-xs font-black">2</span><div><p class="font-bold">Organization details</p><p class="mt-0.5 text-ink/45">Company name and workspace URL.</p></div></li>
-            <li class="flex gap-3"><span class="grid h-6 w-6 shrink-0 place-items-center rounded-full border-2 border-ink/15 text-xs font-black">3</span><div><p class="font-bold">Region and terms</p><p class="mt-0.5 text-ink/45">Choose proximity and accept terms.</p></div></li>
-            <li class="flex gap-3"><span class="grid h-6 w-6 shrink-0 place-items-center rounded-full border-2 border-ink/15 text-xs font-black">4</span><div><p class="font-bold">Provision environment</p><p class="mt-0.5 text-ink/45">We deploy and verify your application.</p></div></li>
-          </ol>
-          <button class="mt-7 w-full rounded-full bg-leaf px-5 py-3.5 text-sm font-bold text-white shadow-lg shadow-leaf/15">Continue setup →</button>
+      <section class="mt-8 grid gap-4 sm:grid-cols-2 xl:grid-cols-6">
+        <article v-for="item in [['Customers', summary.customers], ['Applications', summary.applications], ['Releases', summary.releases], ['Environments', summary.environments], ['Active', summary.activeEnvironments], ['Failed', summary.failedEnvironments]]" :key="item[0]" class="rounded-2xl border border-ink/8 bg-white p-5">
+          <p class="text-xs font-black uppercase tracking-widest text-ink/40">{{ item[0] }}</p><p class="mt-3 text-3xl font-black">{{ item[1] }}</p>
         </article>
       </section>
 
-      <section class="mt-5 grid gap-5 md:grid-cols-3">
-        <article class="rounded-[1.5rem] border border-ink/8 bg-white p-6"><div class="flex items-start justify-between"><div><p class="text-xs font-black uppercase tracking-[.16em] text-ink/40">Trial</p><p class="mt-3 text-2xl font-black">Not started</p></div><span class="grid h-10 w-10 place-items-center rounded-xl bg-violet-50 text-violet-600">◷</span></div><p class="mt-5 text-sm text-ink/45">Your 30 days begin after provisioning.</p></article>
-        <article id="backups" class="rounded-[1.5rem] border border-ink/8 bg-white p-6"><div class="flex items-start justify-between"><div><p class="text-xs font-black uppercase tracking-[.16em] text-ink/40">Last backup</p><p class="mt-3 text-2xl font-black">No backups</p></div><span class="grid h-10 w-10 place-items-center rounded-xl bg-sky-50 text-sky-600">↓</span></div><p class="mt-5 text-sm text-ink/45">Automatic backups start with your environment.</p></article>
-        <article class="rounded-[1.5rem] border border-ink/8 bg-white p-6"><div class="flex items-start justify-between"><div><p class="text-xs font-black uppercase tracking-[.16em] text-ink/40">Application</p><p class="mt-3 text-2xl font-black">Inventory</p></div><span class="grid h-10 w-10 place-items-center rounded-xl bg-mint text-leaf">◇</span></div><p class="mt-5 text-sm text-ink/45">Stable release channel · PostgreSQL</p></article>
-      </section>
-
-      <section class="mt-5 grid gap-5 lg:grid-cols-[.8fr_1.2fr]">
-        <article class="rounded-[1.7rem] bg-ink p-7 text-white sm:p-8">
-          <p class="text-xs font-black uppercase tracking-[.16em] text-emerald-300">Account security</p>
-          <h2 class="mt-3 text-2xl font-black">Change password</h2>
-          <p class="mt-3 max-w-md text-sm leading-6 text-white/50">Use at least 12 characters and choose a password you do not use for another service.</p>
-        </article>
-        <form class="rounded-[1.7rem] border border-ink/8 bg-white p-7 sm:p-8" @submit.prevent="submitPasswordChange">
-          <div class="grid gap-5 sm:grid-cols-2">
-            <label class="sm:col-span-2">
-              <span class="text-sm font-bold">Current password</span>
-              <input v-model="currentPassword" required type="password" autocomplete="current-password" class="mt-2 w-full rounded-xl border border-ink/12 px-4 py-3 outline-none transition focus:border-leaf focus:ring-2 focus:ring-leaf/10">
-            </label>
-            <label>
-              <span class="text-sm font-bold">New password</span>
-              <input v-model="newPassword" required minlength="12" maxlength="128" type="password" autocomplete="new-password" class="mt-2 w-full rounded-xl border border-ink/12 px-4 py-3 outline-none transition focus:border-leaf focus:ring-2 focus:ring-leaf/10">
-            </label>
-            <label>
-              <span class="text-sm font-bold">Confirm new password</span>
-              <input v-model="confirmPassword" required minlength="12" maxlength="128" type="password" autocomplete="new-password" class="mt-2 w-full rounded-xl border border-ink/12 px-4 py-3 outline-none transition focus:border-leaf focus:ring-2 focus:ring-leaf/10">
-            </label>
-          </div>
-          <p v-if="passwordError" role="alert" class="mt-4 text-sm font-semibold text-red-600">{{ passwordError }}</p>
-          <p v-if="passwordSuccess" role="status" class="mt-4 text-sm font-semibold text-leaf">{{ passwordSuccess }}</p>
-          <button :disabled="changingPassword" class="mt-6 rounded-full bg-leaf px-6 py-3 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-50">
-            {{ changingPassword ? 'Changing password…' : 'Change password' }}
-          </button>
+      <section id="customers" class="mt-6 rounded-[1.7rem] border border-ink/8 bg-white p-7 sm:p-8">
+        <div class="flex flex-wrap items-center justify-between gap-4"><div><p class="text-xs font-black uppercase tracking-[.16em] text-leaf">Customer registry</p><h2 class="mt-2 text-2xl font-black">Customers</h2></div><button v-if="canOperate" class="rounded-full bg-leaf px-5 py-3 text-sm font-bold text-white" @click="showCustomerForm = !showCustomerForm">{{ showCustomerForm ? 'Cancel' : 'Add customer' }}</button></div>
+        <form v-if="showCustomerForm" class="mt-6 grid gap-4 rounded-2xl bg-[#f3f5f1] p-5 md:grid-cols-2" @submit.prevent="createCustomer">
+          <input v-model="customerForm.code" required pattern="[A-Za-z0-9_-]+" placeholder="Customer code (ACME)" class="rounded-xl border border-ink/10 bg-white px-4 py-3">
+          <input v-model="customerForm.name" required minlength="2" placeholder="Business name" class="rounded-xl border border-ink/10 bg-white px-4 py-3">
+          <input v-model="customerForm.contactName" placeholder="Contact name" class="rounded-xl border border-ink/10 bg-white px-4 py-3">
+          <input v-model="customerForm.contactEmail" type="email" placeholder="Contact email" class="rounded-xl border border-ink/10 bg-white px-4 py-3">
+          <textarea v-model="customerForm.notes" placeholder="Internal notes" class="rounded-xl border border-ink/10 bg-white px-4 py-3 md:col-span-2"></textarea>
+          <button :disabled="savingCustomer" class="justify-self-start rounded-full bg-ink px-6 py-3 text-sm font-bold text-white disabled:opacity-50">{{ savingCustomer ? 'Saving…' : 'Create customer' }}</button>
         </form>
+        <div class="mt-6 overflow-x-auto"><table class="w-full min-w-[650px] text-left text-sm"><thead class="border-b border-ink/10 text-xs uppercase tracking-widest text-ink/40"><tr><th class="pb-3">Code</th><th class="pb-3">Customer</th><th class="pb-3">Contact</th><th class="pb-3">Status</th></tr></thead><tbody><tr v-for="customer in customers" :key="customer.id" class="border-b border-ink/6"><td class="py-4 font-black">{{ customer.code }}</td><td class="py-4 font-bold">{{ customer.name }}</td><td class="py-4 text-ink/50">{{ customer.contactEmail || '—' }}</td><td class="py-4"><span class="rounded-full bg-mint px-3 py-1 text-xs font-bold text-leaf">{{ customer.status }}</span></td></tr></tbody></table><p v-if="!customers.length && !loading" class="py-10 text-center text-sm text-ink/45">No customers have been created.</p></div>
       </section>
 
-      <section id="operations" class="mt-5 rounded-[1.7rem] border border-ink/8 bg-white p-7 sm:p-8">
-        <div class="flex items-center justify-between"><div><p class="text-xs font-black uppercase tracking-[.16em] text-leaf">Operation history</p><h2 class="mt-2 text-2xl font-black">Recent activity</h2></div><span class="text-xs font-bold text-ink/35">AUDITED</span></div>
-        <div class="mt-7 rounded-2xl border border-dashed border-ink/15 px-6 py-10 text-center"><p class="font-bold">No operations yet</p><p class="mt-2 text-sm text-ink/45">Provisioning, backups, upgrades, and restarts will appear here.</p></div>
+      <section class="mt-6 grid gap-6 xl:grid-cols-2">
+        <article id="applications" class="rounded-[1.7rem] border border-ink/8 bg-white p-7 sm:p-8"><p class="text-xs font-black uppercase tracking-[.16em] text-leaf">GHCR catalogue</p><h2 class="mt-2 text-2xl font-black">Applications</h2><div class="mt-6 space-y-3"><div v-for="application in applications" :key="application.id" class="rounded-2xl border border-ink/8 p-5"><div class="flex justify-between gap-4"><div><p class="font-black">{{ application.name }}</p><p class="mt-1 text-sm text-ink/45">ghcr.io/{{ application.ghcrOwner }}/{{ application.apiPackage || application.webPackage }}</p></div><span class="text-xs font-bold text-leaf">{{ application.status }}</span></div></div><p v-if="!applications.length && !loading" class="py-10 text-center text-sm text-ink/45">Application catalogue is empty.</p></div></article>
+        <article id="environments" class="rounded-[1.7rem] bg-ink p-7 text-white sm:p-8"><p class="text-xs font-black uppercase tracking-[.16em] text-emerald-300">Deployment inventory</p><h2 class="mt-2 text-2xl font-black">Environments</h2><div class="mt-6 space-y-3"><div v-for="environment in environments" :key="environment.id" class="rounded-2xl bg-white/6 p-5"><div class="flex justify-between gap-4"><div><p class="font-black">{{ environment.name }}</p><p class="mt-1 text-sm text-white/45">{{ environment.hostname }} · {{ environment.deploymentMode.replaceAll('_', ' ') }}</p></div><span class="text-xs font-bold text-emerald-300">{{ environment.status }}</span></div></div><p v-if="!environments.length && !loading" class="py-10 text-center text-sm text-white/40">No environments are managed yet.</p></div></article>
       </section>
     </main>
   </div>
