@@ -22,6 +22,12 @@ export const useAuthStore = defineStore('auth', () => {
     }));
   }
 
+  async function changePassword(currentPassword: string, newPassword: string): Promise<void> {
+    await apiRequest<{ message: string }>('/auth/change-password', {
+      method: 'POST', body: JSON.stringify({ currentPassword, newPassword }),
+    });
+  }
+
   async function restore(): Promise<void> {
     if (initialized.value) return;
     if (!sessionStorage.getItem('portal_access_token')) { initialized.value = true; return; }
@@ -36,5 +42,5 @@ export const useAuthStore = defineStore('auth', () => {
     initialized.value = true;
   }
 
-  return { user, initialized, isAuthenticated, establishSession, login, restore, logout };
+  return { user, initialized, isAuthenticated, establishSession, login, changePassword, restore, logout };
 });

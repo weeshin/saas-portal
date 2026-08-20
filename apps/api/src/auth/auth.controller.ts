@@ -4,6 +4,7 @@ import { AuthResult, AuthService, PublicUser } from './auth.service';
 import { AuthenticatedRequest, JwtAuthGuard } from './jwt-auth.guard';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 
 @ApiTags('auth')
 @Controller('auth')
@@ -17,5 +18,17 @@ export class AuthController {
   @UseGuards(JwtAuthGuard)
   me(@Req() request: AuthenticatedRequest): Promise<PublicUser> {
     return this.auth.findPublicUser(request.user.id);
+  }
+
+  @Post('change-password')
+  @HttpCode(200)
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  async changePassword(
+    @Req() request: AuthenticatedRequest,
+    @Body() input: ChangePasswordDto,
+  ): Promise<{ message: string }> {
+    await this.auth.changePassword(request.user.id, input);
+    return { message: 'Password changed successfully' };
   }
 }

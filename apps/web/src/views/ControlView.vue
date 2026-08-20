@@ -6,9 +6,36 @@ import { useAuthStore } from '../stores/auth';
 const auth = useAuthStore();
 const router = useRouter();
 const mobileNavOpen = ref(false);
+const currentPassword = ref('');
+const newPassword = ref('');
+const confirmPassword = ref('');
+const passwordError = ref('');
+const passwordSuccess = ref('');
+const changingPassword = ref(false);
 const initials = computed(() => auth.user?.name.split(/\s+/).map(part => part[0]).join('').slice(0, 2).toUpperCase() ?? 'U');
 
 async function logout(): Promise<void> { auth.logout(); await router.push('/login'); }
+
+async function submitPasswordChange(): Promise<void> {
+  passwordError.value = '';
+  passwordSuccess.value = '';
+  if (newPassword.value !== confirmPassword.value) {
+    passwordError.value = 'New passwords do not match.';
+    return;
+  }
+  changingPassword.value = true;
+  try {
+    await auth.changePassword(currentPassword.value, newPassword.value);
+    currentPassword.value = '';
+    newPassword.value = '';
+    confirmPassword.value = '';
+    passwordSuccess.value = 'Your password has been changed.';
+  } catch (error) {
+    passwordError.value = error instanceof Error ? error.message : 'Unable to change password.';
+  } finally {
+    changingPassword.value = false;
+  }
+}
 </script>
 
 <template>
@@ -68,6 +95,35 @@ async function logout(): Promise<void> { auth.logout(); await router.push('/logi
         <article class="rounded-[1.5rem] border border-ink/8 bg-white p-6"><div class="flex items-start justify-between"><div><p class="text-xs font-black uppercase tracking-[.16em] text-ink/40">Trial</p><p class="mt-3 text-2xl font-black">Not started</p></div><span class="grid h-10 w-10 place-items-center rounded-xl bg-violet-50 text-violet-600">◷</span></div><p class="mt-5 text-sm text-ink/45">Your 30 days begin after provisioning.</p></article>
         <article id="backups" class="rounded-[1.5rem] border border-ink/8 bg-white p-6"><div class="flex items-start justify-between"><div><p class="text-xs font-black uppercase tracking-[.16em] text-ink/40">Last backup</p><p class="mt-3 text-2xl font-black">No backups</p></div><span class="grid h-10 w-10 place-items-center rounded-xl bg-sky-50 text-sky-600">↓</span></div><p class="mt-5 text-sm text-ink/45">Automatic backups start with your environment.</p></article>
         <article class="rounded-[1.5rem] border border-ink/8 bg-white p-6"><div class="flex items-start justify-between"><div><p class="text-xs font-black uppercase tracking-[.16em] text-ink/40">Application</p><p class="mt-3 text-2xl font-black">Inventory</p></div><span class="grid h-10 w-10 place-items-center rounded-xl bg-mint text-leaf">◇</span></div><p class="mt-5 text-sm text-ink/45">Stable release channel · PostgreSQL</p></article>
+      </section>
+
+      <section class="mt-5 grid gap-5 lg:grid-cols-[.8fr_1.2fr]">
+        <article class="rounded-[1.7rem] bg-ink p-7 text-white sm:p-8">
+          <p class="text-xs font-black uppercase tracking-[.16em] text-emerald-300">Account security</p>
+          <h2 class="mt-3 text-2xl font-black">Change password</h2>
+          <p class="mt-3 max-w-md text-sm leading-6 text-white/50">Use at least 12 characters and choose a password you do not use for another service.</p>
+        </article>
+        <form class="rounded-[1.7rem] border border-ink/8 bg-white p-7 sm:p-8" @submit.prevent="submitPasswordChange">
+          <div class="grid gap-5 sm:grid-cols-2">
+            <label class="sm:col-span-2">
+              <span class="text-sm font-bold">Current password</span>
+              <input v-model="currentPassword" required type="password" autocomplete="current-password" class="mt-2 w-full rounded-xl border border-ink/12 px-4 py-3 outline-none transition focus:border-leaf focus:ring-2 focus:ring-leaf/10">
+            </label>
+            <label>
+              <span class="text-sm font-bold">New password</span>
+              <input v-model="newPassword" required minlength="12" maxlength="128" type="password" autocomplete="new-password" class="mt-2 w-full rounded-xl border border-ink/12 px-4 py-3 outline-none transition focus:border-leaf focus:ring-2 focus:ring-leaf/10">
+            </label>
+            <label>
+              <span class="text-sm font-bold">Confirm new password</span>
+              <input v-model="confirmPassword" required minlength="12" maxlength="128" type="password" autocomplete="new-password" class="mt-2 w-full rounded-xl border border-ink/12 px-4 py-3 outline-none transition focus:border-leaf focus:ring-2 focus:ring-leaf/10">
+            </label>
+          </div>
+          <p v-if="passwordError" role="alert" class="mt-4 text-sm font-semibold text-red-600">{{ passwordError }}</p>
+          <p v-if="passwordSuccess" role="status" class="mt-4 text-sm font-semibold text-leaf">{{ passwordSuccess }}</p>
+          <button :disabled="changingPassword" class="mt-6 rounded-full bg-leaf px-6 py-3 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-50">
+            {{ changingPassword ? 'Changing password…' : 'Change password' }}
+          </button>
+        </form>
       </section>
 
       <section id="operations" class="mt-5 rounded-[1.7rem] border border-ink/8 bg-white p-7 sm:p-8">

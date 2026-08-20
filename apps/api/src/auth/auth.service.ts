@@ -1,4 +1,4 @@
-import { ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
+import { BadRequestException, ConflictException, Injectable, UnauthorizedException } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
 import { InjectRepository } from '@nestjs/typeorm';
 import * as argon2 from 'argon2';
@@ -6,6 +6,7 @@ import { Repository } from 'typeorm';
 import { User } from '../users/user.entity';
 import { LoginDto } from './dto/login.dto';
 import { RegisterDto } from './dto/register.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 
 export interface AuthResult {
   accessToken: string;
@@ -43,6 +44,22 @@ export class AuthService {
     const user = await this.users.findOneBy({ id });
     if (!user) throw new UnauthorizedException('User no longer exists');
     return { id: user.id, name: user.name, email: user.email };
+  }
+
+  async changePassword(userId: string, input: ChangePasswordDto): Promise<void> {
+    const user = await this.users.createQueryBuilder('user')
+      .addSelect('user.passwordHash')
+      .where({ id: userId })
+      .getOne();
+    if (!user) throw new UnauthorizedException('User no longer exists');
+    if (!(await argon2.verify(user.passwordHash, input.currentPassword))) {
+      throw new UnauthorizedException('Current password is incorrect');
+    }
+    if (await argon2.verify(user.passwordHash, input.newPassword)) {
+      throw new BadRequestException('New password must be different from the current password');
+    }
+    user.passwordHash = await argon2.hash(input.newPassword);
+    await this.users.save(user);
   }
 
   private async issueToken(user: User): Promise<AuthResult> {
